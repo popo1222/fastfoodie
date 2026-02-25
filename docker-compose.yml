@@ -8,6 +8,7 @@ services:
     volumes:
       - api-data:/app/prisma
       - api-uploads:/app/uploads
+      - ./triggers:/app/triggers    # Shared with host watcher
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""]
       interval: 10s

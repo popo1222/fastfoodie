@@ -2,15 +2,12 @@
 set -e
 
 # ─── FastFoodie Server Setup Script ──────────────────────
-# Run on a clean Ubuntu 22.04/24.04 server:
-#   curl -fsSL https://raw.githubusercontent.com/popo1222/fastfoodie/main/setup.sh | bash
-# Or:
-#   chmod +x setup.sh && ./setup.sh
+# Download and run:
+#   curl -fsSL https://raw.githubusercontent.com/popo1222/fastfoodie/main/setup.sh -o setup.sh
+#   sudo bash setup.sh
 
 INSTALL_DIR="/opt/fastfoodie"
-COMPOSE_URL="https://raw.githubusercontent.com/popo1222/fastfoodie/main/docker-compose.yml"
-ENV_URL="https://raw.githubusercontent.com/popo1222/fastfoodie/main/.env.example"
-CADDY_URL="https://raw.githubusercontent.com/popo1222/fastfoodie/main/Caddyfile.example"
+REPO_BASE="https://raw.githubusercontent.com/popo1222/fastfoodie/main"
 
 echo ""
 echo "╔══════════════════════════════════════════════╗"
@@ -82,9 +79,12 @@ echo "📁 Setting up ${INSTALL_DIR}..."
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-# Download files
-curl -fsSL "$COMPOSE_URL" -o docker-compose.yml
-curl -fsSL "$ENV_URL" -o .env.example
+# Download deployment files
+curl -fsSL "${REPO_BASE}/docker-compose.yml" -o docker-compose.yml
+curl -fsSL "${REPO_BASE}/update.sh" -o update.sh
+curl -fsSL "${REPO_BASE}/watcher.sh" -o watcher.sh
+chmod +x update.sh watcher.sh
+mkdir -p triggers
 
 # ─── Configure .env ──────────────────────────────────────
 echo ""
@@ -134,6 +134,21 @@ EOF
 
 echo "  ✅ Caddyfile created for ${ADMIN_DOMAIN} + ${WEBAPP_DOMAIN}"
 
+# ─── Setup Update Watcher (cron) ─────────────────────────
+echo ""
+echo "⏰ Setting up update watcher..."
+
+# Remove old entries if re-running setup
+crontab -l 2>/dev/null | grep -v "fastfoodie.*watcher" > /tmp/crontab.tmp || true
+
+# Add watcher — runs every 30 seconds (two cron entries offset by 30s)
+echo "* * * * * ${INSTALL_DIR}/watcher.sh" >> /tmp/crontab.tmp
+echo "* * * * * sleep 30 && ${INSTALL_DIR}/watcher.sh" >> /tmp/crontab.tmp
+
+crontab /tmp/crontab.tmp
+rm /tmp/crontab.tmp
+echo "  ✅ Update watcher installed (checks every 30s)"
+
 # ─── Pull & Start ───────────────────────────────────────
 echo ""
 echo "🐳 Pulling Docker images..."
@@ -145,7 +160,7 @@ docker compose up -d
 
 # Wait for healthy
 echo "  Waiting for API to be ready..."
-sleep 10
+sleep 15
 
 # ─── Seed database ──────────────────────────────────────
 echo ""
@@ -172,6 +187,7 @@ echo "║  ⚠️  Change password after first login!      ║"
 echo "║                                              ║"
 echo "║  Files:   ${INSTALL_DIR}                     "
 echo "║  Logs:    docker compose logs -f             ║"
+echo "║  Update:  cd ${INSTALL_DIR} && ./update.sh   "
 echo "║                                              ║"
 echo "╚══════════════════════════════════════════════╝"
 echo ""
