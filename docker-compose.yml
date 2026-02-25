@@ -1,0 +1,42 @@
+services:
+  # ─── API (Fastify + SQLite) ─────────────────────────────
+  api:
+    image: ghcr.io/popo1222/fastfoodie-api:latest
+    container_name: fastfoodie-api
+    restart: unless-stopped
+    env_file: ./.env
+    volumes:
+      - api-data:/app/prisma
+      - api-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ─── Admin Panel (Nginx + React SPA) ───────────────────
+  admin:
+    image: ghcr.io/popo1222/fastfoodie-admin:latest
+    container_name: fastfoodie-admin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # ─── Customer Webapp (Nginx + React SPA) ────────────────
+  webapp:
+    image: ghcr.io/popo1222/fastfoodie-webapp:latest
+    container_name: fastfoodie-webapp
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  api-data:
+  api-uploads:

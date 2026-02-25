@@ -1,0 +1,14 @@
+# ─── FastFoodie Caddy Configuration ───────────────────────
+# Copy to Caddyfile and replace domains with your actual domains:
+#   cp Caddyfile.example Caddyfile && nano Caddyfile
+#
+# Caddy auto-provisions SSL certificates from Let's Encrypt.
+# Make sure your domains point to this server's IP before starting.
+
+admin.example.com {
+    reverse_proxy localhost:8080
+}
+
+order.example.com {
+    reverse_proxy localhost:8081
+}
