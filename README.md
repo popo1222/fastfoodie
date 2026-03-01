@@ -22,7 +22,7 @@ A complete food ordering system for restaurants and cafes. QR code-based orderin
 
 | Item | Cost | Recommendation |
 |---|---|---|
-| **VPS Server** | ~RM20-40/month | DigitalOcean, Hetzner, or any VPS with 1 vCPU + 1GB RAM |
+| **VPS Server** | ~RM20-60/month | See server sizing guide below |
 | **2 Domains** | ~RM30-50/year | One for admin (e.g. `admin.kedai.com`), one for customer app (e.g. `order.kedai.com`). Can be subdomains of the same domain. |
 
 ### Optional
@@ -42,65 +42,15 @@ A complete food ordering system for restaurants and cafes. QR code-based orderin
 
 > **Recommendation:** Start without S3. Add it later when the client wants menu photos.
 
----
+### Server Sizing Guide
 
-### VPS Setup Guide
+| Client Size | Tables | Spec | Monthly Cost |
+|---|---|---|---|
+| Small stall | 1-5 | 1 vCPU, 1GB RAM | ~RM20/month |
+| Café | 5-15 | 2 vCPU, 2GB RAM | ~RM40/month |
+| Restaurant | 15+ | 2 vCPU, 4GB RAM | ~RM60/month |
 
-**Option A: DigitalOcean (Easiest)**
-1. Go to [digitalocean.com](https://digitalocean.com) → Create Droplet
-2. Choose **Ubuntu 24.04**, **Basic**, **$6/month** (1 vCPU, 1GB RAM, 25GB SSD)
-3. Choose region closest to client (Singapore for MY)
-4. Add your SSH key (or use password)
-5. Create → Note the IP address
-
-**Option B: Hetzner (Cheapest)**
-1. Go to [hetzner.com/cloud](https://hetzner.com/cloud) → Create Server
-2. Choose **Ubuntu 24.04**, **CX22** (~€4/month, 2 vCPU, 4GB RAM)
-3. Location: Singapore
-4. Add SSH key → Create
-
-**Option C: Any VPS**
-- Minimum: 1 vCPU, 1GB RAM, 10GB disk, Ubuntu 22.04+
-- Other providers: Vultr, Linode, AWS Lightsail, etc.
-
-### Domain Setup Guide
-
-1. Buy a domain from [Namecheap](https://namecheap.com), [Cloudflare](https://cloudflare.com), or any registrar
-2. Create 2 **A records** pointing to your server IP:
-   ```
-   admin.kedai.com  →  A  →  123.456.789.0
-   order.kedai.com  →  A  →  123.456.789.0
-   ```
-3. Wait for DNS propagation (usually 5-15 minutes)
-4. Verify: `ping admin.kedai.com` should resolve to your server IP
-
-> **Tip:** Use subdomains of one domain to save cost. Buy `kedai.com` (RM30/year) and use `admin.kedai.com` + `order.kedai.com`.
-
-### S3 Setup Guide (Optional)
-
-Any S3-compatible storage works. Cheapest options:
-
-**Option A: Cloudflare R2 (Recommended — free tier generous)**
-1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com) → R2 → Create Bucket
-2. Bucket name: `fastfoodie-{clientname}` (e.g. `fastfoodie-kedaiali`)
-3. Go to R2 → Manage R2 API Tokens → Create API Token
-4. Note: Access Key ID, Secret Access Key
-5. S3 endpoint: `https://{account_id}.r2.cloudflarestorage.com`
-
-**Option B: DigitalOcean Spaces ($5/month)**
-1. Go to Spaces → Create Space
-2. Region: Singapore (`sgp1`)
-3. Note: Space name, access key, secret key
-4. S3 endpoint: `https://sgp1.digitaloceanspaces.com`
-
-**In FastFoodie Admin → Settings → S3 Storage:**
-```
-Access Key ID:     [from above]
-Secret Access Key: [from above]
-Region:            auto (R2) or sgp1 (DO)
-Bucket:            fastfoodie-kedaiali
-Endpoint:          https://xxx.r2.cloudflarestorage.com
-```
+> Admin and Webapp are just Nginx serving static files (~5MB each). The API runs as a single Node.js process (~80-150MB). SQLite is embedded. The whole stack uses ~300-400MB under normal load.
 
 ---
 
@@ -124,7 +74,7 @@ The script will:
 - Ubuntu 22.04+ (or any Linux with Docker support)
 - Docker & Docker Compose v2
 - Two domains pointing to your server IP (for auto SSL)
-- Minimum: 1 vCPU, 1GB RAM, 10GB disk
+- Minimum: 1 vCPU, 1GB RAM, 10GB disk (see sizing guide above)
 
 ### Steps
 
@@ -384,6 +334,15 @@ sudo ufw allow 22    # SSH (don't lock yourself out!)
 ```
 
 Do **not** expose ports 8080, 8081, or 3000 directly — let Caddy handle external traffic.
+
+## License
+
+FastFoodie is **free to use** for any business. The software is proprietary — source code is not included or distributed. All rights reserved by ATJY Studio.
+
+- ✅ Free to use for commercial purposes
+- ✅ No monthly software fees
+- ❌ No redistribution or resale
+- ❌ No reverse engineering or modification
 
 ## Support
 
